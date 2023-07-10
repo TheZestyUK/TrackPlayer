@@ -1,0 +1,101 @@
+--zesyUK
+
+-- Configuration
+local allowedGroups = { -- Define the groups allowed to access the track player menu
+    "admin",
+    "moderator"
+}
+
+-- Event handler for player pressing a key to open the track player menu
+RegisterServerEvent('trackPlayer:openMenu')
+AddEventHandler('trackPlayer:openMenu', function()
+    local playerSource = source
+
+    -- Check if the player has permission to access the track player menu
+    if IsPlayerAllowed(playerSource) then
+        -- Get a list of all players on the server
+        local players = GetPlayers()
+
+        -- Create a menu to display the list of players
+        local menu = {}
+
+        for _, player in ipairs(players) do
+            -- Get the player's name and identifier
+            local playerName = GetPlayerName(player)
+            local playerIdentifier = GetPlayerIdentifier(player)
+
+            -- Add a menu option for each player
+            table.insert(menu, {
+                name = playerName,
+                identifier = playerIdentifier,
+                action = 'trackPlayer:showLocation'
+            })
+        end
+
+        -- Trigger a client event to display the track player menu
+        TriggerClientEvent('trackPlayer:showMenu', playerSource, menu)
+    else
+        -- Inform the player that they don't have permission to access the track player menu
+        TriggerClientEvent('chat:addMessage', playerSource, {
+            args = { '^1You do not have permission to access this menu.' }
+        })
+    end
+end)
+
+-- Event handler for showing the location of a tracked player
+RegisterServerEvent('trackPlayer:showLocation')
+AddEventHandler('trackPlayer:showLocation', function(playerIdentifier)
+    local playerSource = source
+
+    -- Check if the player has permission to access the track player menu
+    if IsPlayerAllowed(playerSource) then
+        -- Get the player's source based on their identifier
+        local player = GetPlayerByIdentifier(playerIdentifier)
+
+        -- Check if the player is online
+        if player ~= nil then
+            -- Get the player's current position
+            local playerPosition = GetEntityCoords(GetPlayerPed(player))
+
+            -- Trigger a client event to display the player's location
+            TriggerClientEvent('trackPlayer:showLocation', playerSource, playerPosition)
+        else
+            -- Inform the player that the tracked player is not online
+            TriggerClientEvent('chat:addMessage', playerSource, {
+                args = { '^1That player is not online.' }
+            })
+        end
+    else
+        -- Inform the player that they don't have permission to access the track player menu
+        TriggerClientEvent('chat:addMessage', playerSource, {
+            args = { '^1You do not have permission to access this menu.' }
+        })
+    end
+end)
+
+-- Function to check if a player is allowed to access the track player menu
+function IsPlayerAllowed(playerSource)
+    -- Get the player's group
+    local playerGroup = GetPlayerGroup(playerSource)
+
+    -- Check if the player's group is allowed
+    for _, group in ipairs(allowedGroups) do
+        if playerGroup == group then
+            return true
+        end
+    end
+
+    return false
+end
+
+-- Function to get a player's source based on their identifier
+function GetPlayerByIdentifier(playerIdentifier)
+    -- Loop through all players to find the matching identifier
+    for _, player in ipairs(GetPlayers()) do
+        if GetPlayerIdentifier(player) == playerIdentifier then
+            return player
+        end
+    end
+
+    return nil
+end
